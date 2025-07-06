@@ -24,19 +24,10 @@ export function DocumentsSection({ registrationNumber }: DocumentsSectionProps) 
   const { showToast } = useToast()
 
   useEffect(() => {
-    if (registrationNumber) {
-      fetchDocuments()
-    } else {
-      setIsLoading(false)
-    }
-  }, [registrationNumber])
+    fetchDocuments()
+  }, [])
 
   const fetchDocuments = async () => {
-    if (!registrationNumber) {
-      setIsLoading(false)
-      return
-    }
-
     try {
       setIsLoading(true)
       const result = await apiRequest(`/api/students/documents/${registrationNumber}`)

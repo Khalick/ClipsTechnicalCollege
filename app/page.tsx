@@ -1,18 +1,22 @@
 "use client"
 import { StudentLoginForm } from "@/components/student/StudentLoginForm"
-import { StudentDashboard } from "@/components/student/StudentDashboard"
+import { StudentDashboard } from "@/components/student/ModernStudentDashboard"
 import { ToastContainer } from "@/components/ToastContainer"
-import { PasswordResetForm } from "@/components/PasswordResetForm"
+import { StudentPasswordResetForm } from "@/components/student/StudentPasswordResetForm"
 import { useStudentAuth } from "@/hooks/useStudentAuth"
-import ImprovedSpinner from "@/components/Spinner"
+import { DashboardSkeleton } from "@/components/ui/loading-skeleton"
+import "../styles/modern-dashboard.css"
+import "../styles/kyu-login.css"
 
 export default function StudentPortal() {
   const { isAuthenticated, isLoading, showPasswordReset, user, completePasswordReset } = useStudentAuth()
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <ImprovedSpinner />
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <DashboardSkeleton />
+        </div>
       </div>
     )
   }
@@ -21,9 +25,8 @@ export default function StudentPortal() {
     <main>
       <ToastContainer />
       {showPasswordReset && user ? (
-        <PasswordResetForm 
+        <StudentPasswordResetForm 
           userId={user.id} 
-          userType="student" 
           username={user.name} 
           onSuccess={completePasswordReset} 
         />

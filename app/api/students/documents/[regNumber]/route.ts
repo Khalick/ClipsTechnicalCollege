@@ -10,10 +10,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Registration number is required" }, { status: 400 })
     }
 
-    if (!supabase) {
-      return NextResponse.json({ error: "Database connection unavailable" }, { status: 500 })
-    }
-
     // Fetch documents for the student
     const { data: documents, error } = await supabase
       .from("student_documents")
@@ -28,9 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({
       success: true,
-      data: {
-        documents: documents || []
-      }
+      documents: documents || []
     })
   } catch (error) {
     console.error("Error fetching student documents:", error)

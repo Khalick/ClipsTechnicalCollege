@@ -1,0 +1,42 @@
+/* Spinner Module CSS */
+
+.innerRing {
+  animation-duration: 2s;
+  animation-direction: reverse;
+}
+
+.reverseRing {
+  animation-duration: 3s;
+  animation-direction: reverse;
+}
+
+.bounceDot1 {
+  animation-delay: 0ms;
+}
+
+.bounceDot2 {
+  animation-delay: 150ms;
+}
+
+.bounceDot3 {
+  animation-delay: 300ms;
+}
+
+/* Additional keyframes for custom animations */
+@keyframes spinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

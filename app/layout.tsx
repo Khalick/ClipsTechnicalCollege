@@ -5,6 +5,8 @@ import "./globals.css"
 import { AuthProvider } from "@/hooks/useAuth"
 import { StudentAuthProvider } from "@/hooks/useStudentAuth"
 import { ToastProvider } from "@/hooks/useToast"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,13 +22,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ToastProvider>
-          <AuthProvider>
-            <StudentAuthProvider>{children}</StudentAuthProvider>
-          </AuthProvider>
-        </ToastProvider>
+        <ErrorBoundary>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ToastProvider>
+              <AuthProvider>
+                <StudentAuthProvider>{children}</StudentAuthProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

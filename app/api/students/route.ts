@@ -20,10 +20,6 @@ export async function GET(request: NextRequest) {
   try {
     console.log("Fetching students")
 
-    if (!supabase) {
-      return NextResponse.json({ error: "Database connection unavailable" }, { status: 500 })
-    }
-
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
 
@@ -47,7 +43,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Successfully fetched ${data.length} students`)
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json(data)
   } catch (error) {
     console.error("Error fetching students:", error)
     return NextResponse.json(
@@ -161,10 +157,6 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         )
       }
-    }
-
-    if (!supabase) {
-      return NextResponse.json({ error: "Database connection unavailable" }, { status: 500 })
     }
 
     // Check if student already exists

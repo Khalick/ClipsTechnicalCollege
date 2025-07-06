@@ -46,3 +46,76 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ regNumber: string }> }
+) {
+  try {
+    const { regNumber } = await context.params
+    
+    if (!regNumber) {
+      return NextResponse.json(
+        { success: false, message: 'Registration number is required' },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      name,
+      email,
+      phone,
+      postal_address,
+      clips_email,
+      gender,
+      emergency_contact_name,
+      emergency_contact_phone,
+      next_of_kin_name,
+      next_of_kin_phone,
+      next_of_kin_relationship
+    } = body
+
+    // Update the student profile
+    const { data, error } = await supabaseAdmin
+      .from('students')
+      .update({
+        name,
+        email,
+        phone,
+        postal_address,
+        clips_email,
+        gender,
+        emergency_contact_name,
+        emergency_contact_phone,
+        next_of_kin_name,
+        next_of_kin_phone,
+        next_of_kin_relationship,
+        updated_at: new Date().toISOString()
+      })
+      .eq('registration_number', regNumber)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { success: false, message: 'Failed to update profile' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data
+    })
+
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

@@ -6,6 +6,9 @@ interface StudentUser {
   id: string
   name: string
   registrationNumber: string
+  course?: string
+  level_of_study?: string
+  registration_number?: string
 }
 
 interface StudentAuthContextType {
@@ -41,7 +44,6 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (registrationNumber: string, password: string) => {
     try {
-      // Implement actual login API call
       const response = await fetch("/api/auth/student-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,18 +53,22 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
 
       if (!response.ok) {
-        // Use the specific error message from the server
         throw new Error(data.message || data.error || "Login failed")
       }
 
-      if (data.first_login) {
+      if (data.first_login || data.requires_password_reset) {
+        // First login - show password reset form
         setUser({
           id: data.student.id,
           name: data.student.name,
           registrationNumber: data.student.registration_number,
+          course: data.student.course,
+          level_of_study: data.student.level_of_study,
+          registration_number: data.student.registration_number,
         })
         setShowPasswordReset(true)
       } else {
+        // Regular login - store token and proceed
         localStorage.setItem("studentToken", data.token)
         localStorage.setItem("studentData", JSON.stringify(data.student))
 
@@ -70,6 +76,9 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
           id: data.student.id,
           name: data.student.name,
           registrationNumber: data.student.registration_number,
+          course: data.student.course,
+          level_of_study: data.student.level_of_study,
+          registration_number: data.student.registration_number,
         })
       }
     } catch (error) {
@@ -85,6 +94,11 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
   }
 
   const completePasswordReset = () => {
+    // After password reset, complete the login process
+    if (user) {
+      localStorage.setItem("studentToken", "temp-token") // Will be replaced on next login
+      localStorage.setItem("studentData", JSON.stringify(user))
+    }
     setShowPasswordReset(false)
   }
 

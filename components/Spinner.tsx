@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import styles from './Spinner.module.css';
 
 
 const ImprovedSpinner = () => {
@@ -11,8 +12,8 @@ const ImprovedSpinner = () => {
           {/* Outer spinning ring */}
           <div className="absolute -inset-4 border-4 border-transparent border-t-blue-500 border-r-blue-300 rounded-full animate-spin"></div>
           
-          <div className="absolute -inset-2 border-2 border-transparent border-t-indigo-400 border-l-indigo-200 rounded-full animate-spin"></div>
-          <div className="absolute -inset-2 border-2 border-transparent border-t-indigo-400 border-l-indigo-200 rounded-full animate-spin animate-reverse"></div>
+          <div className={`absolute -inset-2 border-2 border-transparent border-t-indigo-400 border-l-indigo-200 rounded-full animate-spin ${styles.innerRing}`}></div>
+          <div className={`absolute -inset-2 border-2 border-transparent border-t-indigo-400 border-l-indigo-200 rounded-full animate-spin ${styles.reverseRing}`}></div>
           
           {/* Logo with pulse animation */}
           <div className="relative animate-pulse">
@@ -29,9 +30,9 @@ const ImprovedSpinner = () => {
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Loading...</h2>
           <div className="flex space-x-1 justify-center">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div className={`w-2 h-2 bg-blue-500 rounded-full animate-bounce ${styles.bounceDot1}`}></div>
+            <div className={`w-2 h-2 bg-blue-500 rounded-full animate-bounce ${styles.bounceDot2}`}></div>
+            <div className={`w-2 h-2 bg-blue-500 rounded-full animate-bounce ${styles.bounceDot3}`}></div>
           </div>
         </div>
         

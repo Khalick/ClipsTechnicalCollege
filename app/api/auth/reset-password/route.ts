@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/db"
-import bcrypt from "bcrypt"
+import { supabaseAdmin } from "@/lib/supabase-client"
+import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,24 +10,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    if (new_password.length < 6) {
+      return NextResponse.json({ error: "Password must be at least 6 characters long" }, { status: 400 })
+    }
+
     const password_hash = await bcrypt.hash(new_password, 10)
     const table = user_type === "admin" ? "admins" : "students"
     const passwordField = user_type === "admin" ? "password_hash" : "password"
 
-    const { error } = await supabase
+    // Prepare update data - only include first_login for admins
+    const updateData: any = { [passwordField]: password_hash }
+    if (user_type === "admin") {
+      updateData.first_login = false
+    }
+
+    const { error } = await supabaseAdmin
       .from(table)
-      .update({ 
-        [passwordField]: password_hash,
-        first_login: false 
-      })
+      .update(updateData)
       .eq("id", user_id)
 
     if (error) {
+      console.error("Password update error:", error)
       return NextResponse.json({ error: "Failed to update password" }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, message: "Password updated successfully" })
+    return NextResponse.json({ 
+      success: true, 
+      message: "Password updated successfully" 
+    })
   } catch (error) {
+    console.error("Password reset error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

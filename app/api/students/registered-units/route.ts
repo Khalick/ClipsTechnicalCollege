@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/db"
+import { supabaseAdmin } from "@/lib/supabase-client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,17 +10,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Student ID is required" }, { status: 400 })
     }
 
-    const { data: registeredUnits, error } = await supabase
+    const { data: registeredUnits, error } = await supabaseAdmin
       .from("student_units")
       .select(`
         unit_id,
         registration_date,
         status,
-        units!inner(
+        units(
           id,
-          unit_name,
-          unit_code,
-          credits
+          name,
+          code
         )
       `)
       .eq("student_id", student_id)
@@ -31,12 +30,10 @@ export async function GET(request: NextRequest) {
     }
 
     const formattedUnits = registeredUnits?.map((unit: any) => ({
-      id: unit.unit_id.toString(),
-      name: unit.units.unit_name,
-      code: unit.units.unit_code,
-      status: unit.status,
-      credits: unit.units.credits,
-      registration_date: unit.registration_date
+      id: unit.units.id,
+      name: unit.units.name,
+      code: unit.units.code,
+      status: unit.status
     })) || []
 
     return NextResponse.json({ success: true, registered_units: formattedUnits })

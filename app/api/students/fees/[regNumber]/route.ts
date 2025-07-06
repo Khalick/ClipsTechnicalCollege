@@ -38,8 +38,9 @@ export async function GET(
     // Get total payments for the student
     const { data: payments, error: paymentsError } = await supabaseAdmin
       .from('fee_payments')
-      .select('amount')
+      .select('*')
       .eq('student_id', student.id)
+      .order('payment_date', { ascending: false })
 
     if (paymentsError) {
       console.error('Error fetching payments:', paymentsError)

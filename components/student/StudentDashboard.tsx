@@ -7,6 +7,7 @@ import { StudentProfile } from "./StudentProfile"
 import { UnitRegistration } from "./UnitRegistration"
 import { FeeInformation } from "./FeeInformation"
 import { DocumentsSection } from "./DocumentsSection"
+import { ExamCardGenerator } from "./ExamCardGenerator"
 import Image from "next/image"
 
 interface StudentData {
@@ -43,6 +44,7 @@ export function StudentDashboard() {
   const [units, setUnits] = useState<UnitData[]>([])
   const [fees, setFees] = useState<FeeData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showExamCard, setShowExamCard] = useState(false)
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -120,7 +122,6 @@ export function StudentDashboard() {
             national_id: profileData.data.national_id,
             date_of_birth: profileData.data.date_of_birth,
             email: profileData.data.email,
-            photo_url: profileData.data.photo_url,
           })
         } else {
           console.error("Profile API error:", profileData.error)
@@ -135,7 +136,6 @@ export function StudentDashboard() {
             national_id: "12345678",
             date_of_birth: "1995-01-01",
             email: "student@example.com",
-            photo_url: "/placeholder-user.jpg",
           })
         }
       } else {
@@ -151,7 +151,6 @@ export function StudentDashboard() {
           national_id: "12345678",
           date_of_birth: "1995-01-01",
           email: "student@example.com",
-          photo_url: "/placeholder-user.jpg",
         })
       }
 
@@ -179,7 +178,6 @@ export function StudentDashboard() {
         national_id: "12345678",
         date_of_birth: "1995-01-01",
         email: "student@example.com",
-        photo_url: "/placeholder-user.jpg",
       })
     } finally {
       setIsLoading(false)
@@ -227,33 +225,38 @@ export function StudentDashboard() {
         <div className="container">
           <ul className="nav-menu">
             <li className="nav-item">
-              <a href="#student-info">Dashboard</a>
+              <a href="#" onClick={() => scrollToSection('dashboard')}>Dashboard</a>
             </li>
             <li className="nav-item">
-              <a href="#finance">Finance</a>
+              <a href="#" onClick={() => scrollToSection('finance')}>Finance</a>
               <div className="dropdown-menu">
-                <a href="#" onClick={() => downloadDocument("fee-statement")}>
+                <a href="#" onClick={() => {
+                  const { generateFeeStatement } = require('@/lib/document-generator')
+                  generateFeeStatement(studentData?.registration_number || user?.registrationNumber)
+                }}>
                   Fee Statement
                 </a>
-                <a href="#" onClick={() => downloadDocument("fee-receipt")}>
-                  Financial Receipt
+                <a href="#" onClick={() => scrollToSection('finance')}>
+                  View Fees
                 </a>
               </div>
             </li>
             <li className="nav-item">
-              <a href="#units-registered">Academics</a>
+              <a href="#" onClick={() => scrollToSection('units')}>Academics</a>
               <div className="dropdown-menu">
-                <a href="#exam-card">Exam Card</a>
-                <a href="#" onClick={() => showResults()}>
-                  Results
+                <a href="#" onClick={() => setShowExamCard(true)}>Exam Card</a>
+                <a href="#" onClick={() => scrollToSection('units')}>
+                  View Units
                 </a>
-                <a href="#units-available">Register Units</a>
-                <a href="#documents">My Documents</a>
+                <a href="#" onClick={() => scrollToSection('units')}>
+                  Register Units
+                </a>
+                <a href="#" onClick={() => scrollToSection('documents')}>My Documents</a>
               </div>
             </li>
             <li className="nav-item">
-              <a href="#" onClick={() => showTimetable()}>
-                Timetable
+              <a href="#" onClick={() => scrollToSection('profile')}>
+                Profile
               </a>
             </li>
           </ul>
@@ -262,31 +265,46 @@ export function StudentDashboard() {
 
       <div className="container">
         <div className="dashboard-container">
-          <div className="dashboard">
-            <FeeInformation fees={fees} onRefresh={fetchStudentData} />
-            <UnitRegistration units={units} onUnitsChange={setUnits} />
-            <DocumentsSection registrationNumber={studentData?.registration_number || user?.registrationNumber || ""} />
+          <div className="dashboard" id="dashboard">
+            <div id="finance">
+              <FeeInformation fees={fees} />
+            </div>
+            <div id="units">
+              <UnitRegistration units={units} onUnitsChange={setUnits} />
+            </div>
+            <div id="documents">
+              <DocumentsSection registrationNumber={studentData?.registration_number || user?.registrationNumber || ""} />
+            </div>
           </div>
 
-          <StudentProfile studentData={studentData} onDataChange={setStudentData} />
+          <div id="profile">
+            <StudentProfile studentData={studentData} onDataChange={setStudentData} />
+          </div>
         </div>
       </div>
+      
+      <ExamCardGenerator
+        isOpen={showExamCard}
+        onClose={() => setShowExamCard(false)}
+        studentData={{
+          name: studentData?.name || user?.name || "Student Name",
+          registration_number: studentData?.registration_number || user?.registrationNumber || "Unknown",
+          level_of_study: studentData?.level_of_study || "Year 1 Semester 1",
+          course: studentData?.course || "Computer Science"
+        }}
+        units={units.map(unit => ({
+          code: unit.code || unit.id,
+          name: unit.name
+        }))}
+      />
     </div>
   )
 }
 
 // Helper functions
-const downloadDocument = (type: string) => {
-  console.log(`Downloading ${type}`)
-  // Implement document download logic
-}
-
-const showResults = () => {
-  console.log("Showing results")
-  // Implement results display
-}
-
-const showTimetable = () => {
-  console.log("Showing timetable")
-  // Implement timetable display
+const scrollToSection = (sectionId: string) => {
+  const element = document.getElementById(sectionId)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
