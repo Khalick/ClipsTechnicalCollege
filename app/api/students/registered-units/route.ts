@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
         status,
         units(
           id,
-          name,
-          code
+          unit_name,
+          unit_code
         )
       `)
       .eq("student_id", student_id)
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
     const formattedUnits = registeredUnits?.map((unit: any) => ({
       id: unit.units.id,
-      name: unit.units.name,
-      code: unit.units.code,
+      name: unit.units.unit_name,
+      code: unit.units.unit_code,
       status: unit.status
     })) || []
 

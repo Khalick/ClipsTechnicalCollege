@@ -17,7 +17,7 @@ interface Unit {
 
 interface UnitRegistrationProps {
   units: Unit[]
-  onUnitsChange: (units: Unit[]) => void
+  onUnitsChange: () => void
 }
 
 export function UnitRegistration({ units, onUnitsChange }: UnitRegistrationProps) {

@@ -67,6 +67,9 @@ export function StudentDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard")
   const [academicsExpanded, setAcademicsExpanded] = useState(false)
   const [clearanceExpanded, setClearanceExpanded] = useState(false)
+  const [welcomeExpanded, setWelcomeExpanded] = useState(false)
+  const [showUpdateProfile, setShowUpdateProfile] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -98,12 +101,14 @@ export function StudentDashboard() {
         }
       }
 
-      // Fetch units
-      const unitsResponse = await fetch(`/api/students/units/${user.registrationNumber}`)
-      if (unitsResponse.ok) {
-        const unitsResult = await unitsResponse.json()
-        if (unitsResult.success) {
-          setUnits(unitsResult.data)
+      // Fetch registered units
+      if (user?.id) {
+        const unitsResponse = await fetch(`/api/students/registered-units?student_id=${user.id}`)
+        if (unitsResponse.ok) {
+          const unitsResult = await unitsResponse.json()
+          if (unitsResult.success) {
+            setUnits(unitsResult.registered_units)
+          }
         }
       }
 
@@ -112,6 +117,22 @@ export function StudentDashboard() {
       showToast("Error loading data", "error")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchRegisteredUnits = async () => {
+    if (!user?.id) return
+    
+    try {
+      const unitsResponse = await fetch(`/api/students/registered-units?student_id=${user.id}`)
+      if (unitsResponse.ok) {
+        const unitsResult = await unitsResponse.json()
+        if (unitsResult.success) {
+          setUnits(unitsResult.registered_units)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching registered units:", error)
     }
   }
 
@@ -158,6 +179,44 @@ export function StudentDashboard() {
     setActiveSection(subItemId)
   }
 
+  const handleWelcomeClick = () => {
+    setWelcomeExpanded(!welcomeExpanded)
+  }
+
+  const handleUpdateProfile = async (updatedData: Partial<StudentData>) => {
+    if (!user?.registrationNumber) return
+
+    try {
+      setIsUpdating(true)
+      
+      const response = await fetch(`/api/students/profile/${user.registrationNumber}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setStudentData(result.data)
+          showToast("Profile updated successfully", "success")
+          setShowUpdateProfile(false)
+        } else {
+          showToast(result.message || "Failed to update profile", "error")
+        }
+      } else {
+        showToast("Failed to update profile", "error")
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      showToast("Error updating profile", "error")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <div className="modern-dashboard">
       {/* Top Navigation Bar */}
@@ -181,16 +240,23 @@ export function StudentDashboard() {
               Welcome to the new student portal. For any assistance contact the ICT Department
             </div>
             <div className="user-section">
-              <span className="welcome-text">Welcome: {studentData?.name || user?.name}</span>
-              <div className="nav-buttons">
-                <button className="profile-btn" onClick={() => setActiveSection('dashboard')} title="Profile">
-                  Profile
-                </button>
-                <button className="logout-btn" onClick={logout} title="Logout" aria-label="Logout">
-                  <LogOutIcon />
-                  Logout
-                </button>
-              </div>
+              <span 
+                className="welcome-text clickable" 
+                onClick={handleWelcomeClick}
+              >
+                Welcome: {studentData?.name || user?.name} {welcomeExpanded ? '▲' : '▼'}
+              </span>
+              {welcomeExpanded && (
+                <div className="nav-buttons">
+                  <button className="profile-btn" onClick={() => setActiveSection('dashboard')} title="Profile">
+                    Profile
+                  </button>
+                  <button className="logout-btn" onClick={logout} title="Logout" aria-label="Logout">
+                    <LogOutIcon />
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -413,7 +479,7 @@ export function StudentDashboard() {
                           <span>{studentData?.email || "Not provided"}</span>
                         </div>
                       </div>
-                      <button className="update-profile-btn">Update Profile</button>
+                      <button className="update-profile-btn" onClick={() => setShowUpdateProfile(true)}>Update Profile</button>
                       <button className="make-payment-btn">Make Payment</button>
                     </div>
                   </div>
@@ -434,7 +500,7 @@ export function StudentDashboard() {
 
           {activeSection === "register-units" && (
             <div className="section-content">
-              <UnitRegistration units={units} onUnitsChange={setUnits} />
+              <UnitRegistration units={units} onUnitsChange={fetchRegisteredUnits} />
             </div>
           )}
 
@@ -443,7 +509,7 @@ export function StudentDashboard() {
               <AcademicsSection 
                 activeSection={activeSection}
                 units={units}
-                onUnitsChange={setUnits}
+                onUnitsChange={fetchRegisteredUnits}
                 studentData={studentData}
                 user={user}
               />
@@ -553,6 +619,201 @@ export function StudentDashboard() {
           name: unit.name
         }))}
       />
+
+      {/* Update Profile Modal */}
+      {showUpdateProfile && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Update Profile</h3>
+              <button className="modal-close" onClick={() => setShowUpdateProfile(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <UpdateProfileForm
+                studentData={studentData}
+                onUpdate={handleUpdateProfile}
+                onCancel={() => setShowUpdateProfile(false)}
+                isUpdating={isUpdating}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+// Update Profile Form Component
+interface UpdateProfileFormProps {
+  studentData: StudentData | null
+  onUpdate: (data: Partial<StudentData>) => void
+  onCancel: () => void
+  isUpdating: boolean
+}
+
+function UpdateProfileForm({ studentData, onUpdate, onCancel, isUpdating }: UpdateProfileFormProps) {
+  const [formData, setFormData] = useState({
+    name: studentData?.name || "",
+    email: studentData?.email || "",
+    phone: "",
+    postal_address: "",
+    clips_email: studentData?.email || "",
+    gender: "Male",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    next_of_kin_name: "",
+    next_of_kin_phone: "",
+    next_of_kin_relationship: ""
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onUpdate(formData)
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="update-profile-form">
+      <div className="form-grid">
+        <div className="form-group">
+          <label htmlFor="name">Full Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="phone">Phone Number</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="gender">Gender</label>
+          <select
+            id="gender"
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+          >
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="clips_email">CLIPS Email</label>
+          <input
+            type="email"
+            id="clips_email"
+            name="clips_email"
+            value={formData.clips_email}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group full-width">
+          <label htmlFor="postal_address">Postal Address</label>
+          <input
+            type="text"
+            id="postal_address"
+            name="postal_address"
+            value={formData.postal_address}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="emergency_contact_name">Emergency Contact Name</label>
+          <input
+            type="text"
+            id="emergency_contact_name"
+            name="emergency_contact_name"
+            value={formData.emergency_contact_name}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="emergency_contact_phone">Emergency Contact Phone</label>
+          <input
+            type="tel"
+            id="emergency_contact_phone"
+            name="emergency_contact_phone"
+            value={formData.emergency_contact_phone}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="next_of_kin_name">Next of Kin Name</label>
+          <input
+            type="text"
+            id="next_of_kin_name"
+            name="next_of_kin_name"
+            value={formData.next_of_kin_name}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="next_of_kin_phone">Next of Kin Phone</label>
+          <input
+            type="tel"
+            id="next_of_kin_phone"
+            name="next_of_kin_phone"
+            value={formData.next_of_kin_phone}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="next_of_kin_relationship">Next of Kin Relationship</label>
+          <input
+            type="text"
+            id="next_of_kin_relationship"
+            name="next_of_kin_relationship"
+            value={formData.next_of_kin_relationship}
+            onChange={handleChange}
+            placeholder="e.g., Parent, Sibling, Spouse"
+          />
+        </div>
+      </div>
+
+      <div className="form-actions">
+        <button type="button" onClick={onCancel} className="cancel-btn">
+          Cancel
+        </button>
+        <button type="submit" disabled={isUpdating} className="save-btn">
+          {isUpdating ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </form>
   )
 }
