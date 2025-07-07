@@ -92,12 +92,19 @@ export function StudentDashboard() {
         }
       }
 
-      // Fetch fee data
-      const feeResponse = await fetch(`/api/students/fees/${user.registrationNumber}`)
+      // Fetch fee summary from finance-dashboard API (CHANGED)
+      const feeResponse = await fetch(`/api/students/finance-dashboard/${user.registrationNumber}`)
       if (feeResponse.ok) {
         const feeResult = await feeResponse.json()
         if (feeResult.success) {
-          setFees(feeResult.data)
+          setFees({
+            fee_balance: feeResult.data.balance,
+            total_paid: feeResult.data.total_paid,
+            semester_fee: feeResult.data.total_billed,
+            session_progress: 0, // If you want to show progress, calculate or fetch it
+            fees: [],
+            payments: []
+          })
         }
       }
 
