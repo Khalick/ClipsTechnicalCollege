@@ -8,7 +8,9 @@ import { useStudentAuth } from '@/hooks/useStudentAuth';
 interface FeeData {
   fee_balance: number
   total_paid: number
+  total_billed: number
   semester_fee: number
+  current_semester_fee?: number
   session_progress: number
   fees: Array<{
     id: string
@@ -70,7 +72,7 @@ export function FeeInformation({ fees, onRefresh }: FeeInformationProps) {
   }
 
   const getPaymentProgress = () => {
-    const totalBilled = feeData.semester_fee
+    const totalBilled = feeData.total_billed
     if (totalBilled <= 0) return 0
     return Math.round((feeData.total_paid / totalBilled) * 100)
   }
@@ -114,7 +116,7 @@ export function FeeInformation({ fees, onRefresh }: FeeInformationProps) {
           {/* Total Billed */}
           <div className="fee-item">
             <span className="fee-label">🏷️ TOTAL BILLED:</span>
-            <span className="fee-value">KSh. {feeData.semester_fee.toLocaleString()}.00</span>
+            <span className="fee-value">KSh. {feeData.total_billed.toLocaleString()}.00</span>
           </div>
 
           {/* Total Paid */}

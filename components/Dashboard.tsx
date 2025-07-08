@@ -9,7 +9,7 @@ import { UnitAllocationForm } from "./forms/UnitAllocationForm"
 import { ExamCardUploadForm } from "./forms/ExamCardUploadForm"
 import { DocumentUploadForm } from "./forms/DocumentUploadForm"
 import { AdminManagementForm } from "./forms/AdminManagementForm"
-import { FeesManagementForm } from "./forms/FeesManagementForm"
+import { AdminFeesBillingForm } from "./forms/AdminFeesBillingForm"
 import { StudentsTable } from "./StudentsTable"
 import { SystemStatus } from "./SystemStatus"
 
@@ -47,7 +47,7 @@ export function Dashboard() {
           <ExamCardUploadForm />
           <DocumentUploadForm />
           <AdminManagementForm />
-          <FeesManagementForm />
+          <AdminFeesBillingForm />
           <StudentsTable />
         </div>
       </div>

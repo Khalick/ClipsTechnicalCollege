@@ -59,18 +59,18 @@ export async function GET(
     }
 
     // Calculate comprehensive financial summary
-    const totalBilled = fees?.reduce((sum, fee) => sum + parseFloat(fee.total_fee.toString()), 0) || 0
-    const totalPaid = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0) || 0
+    const totalBilled = fees?.reduce((sum, fee) => sum + parseFloat(fee.total_billed?.toString() || fee.total_fee?.toString() || '0'), 0) || 0
+    const totalPaid = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount?.toString() || '0'), 0) || 0
     const balance = totalBilled - totalPaid
     const paymentProgress = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0
 
     // Current semester information
     const currentSemesterFee = fees && fees.length > 0 ? fees[0] : null
     const currentSemesterPaid = currentSemesterFee 
-      ? parseFloat(currentSemesterFee.amount_paid.toString())
+      ? parseFloat(currentSemesterFee.total_paid?.toString() || currentSemesterFee.amount_paid?.toString() || '0')
       : 0
     const currentSemesterBalance = currentSemesterFee 
-      ? parseFloat(currentSemesterFee.total_fee.toString()) - currentSemesterPaid
+      ? parseFloat(currentSemesterFee.total_billed?.toString() || currentSemesterFee.total_fee?.toString() || '0') - currentSemesterPaid
       : 0
 
     // Payment status determination

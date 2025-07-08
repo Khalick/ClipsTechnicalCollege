@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-client'
-
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ regNumber: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ regNumber: string }> | { regNumber: string } }) {
   try {
-    const { regNumber } = await context.params
+    const { regNumber } = 'then' in params ? await params : params
 
-    if (!regNumber) {
-      return NextResponse.json({ error: 'Registration number is required' }, { status: 400 })
-    }
-
-    // First, get the student ID from registration number
+    // Get student ID from registration number
     const { data: student, error: studentError } = await supabaseAdmin
       .from('students')
       .select('id')
@@ -23,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
-    // Get fee information for the student
+    // Get fees for the student
     const { data: fees, error: feesError } = await supabaseAdmin
       .from('fees')
       .select('*')
@@ -31,11 +23,10 @@ export async function GET(
       .order('created_at', { ascending: false })
 
     if (feesError) {
-      console.error('Error fetching fees:', feesError)
-      return NextResponse.json({ error: 'Failed to fetch fee information' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch fees' }, { status: 500 })
     }
 
-    // Get total payments for the student
+    // Get payments for the student
     const { data: payments, error: paymentsError } = await supabaseAdmin
       .from('fee_payments')
       .select('*')
@@ -43,33 +34,36 @@ export async function GET(
       .order('payment_date', { ascending: false })
 
     if (paymentsError) {
-      console.error('Error fetching payments:', paymentsError)
-      return NextResponse.json({ error: 'Failed to fetch payment information' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 })
     }
-
-    // Calculate totals
-    const totalBilled = fees?.reduce((sum, fee) => sum + parseFloat(fee.total_fee.toString()), 0) || 0
-    const totalPaid = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0) || 0
-    const balance = totalBilled - totalPaid
-
-    // Calculate session progress (percentage of fees paid)
-    const sessionProgress = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0
-
+    
+    // Calculate total billed and total paid
+    const totalBilled = fees?.reduce((sum, fee) => sum + parseFloat(fee.total_billed?.toString() || fee.total_fee?.toString() || '0'), 0) || 0
+    const totalPaid = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount?.toString() || '0'), 0) || 0
+    const feeBalance = totalBilled - totalPaid
+    
     // Get current semester fee (most recent)
-    const currentSemesterFee = fees && fees.length > 0 ? parseFloat(fees[0].total_fee.toString()) : 0
-
-    const feeData = {
-      fee_balance: balance,
+    const currentSemesterFee = fees && fees.length > 0 ? fees[0] : null
+    const semesterFee = currentSemesterFee ? parseFloat(currentSemesterFee.total_billed?.toString() || currentSemesterFee.total_fee?.toString() || '0') : 0
+    
+    // Format response to match what the frontend expects
+    const responseData = {
+      fees: fees?.map(fee => ({
+        ...fee,
+        total_fee: parseFloat(fee.total_billed?.toString() || fee.total_fee?.toString() || '0'),
+        amount_paid: parseFloat(fee.total_paid?.toString() || fee.amount_paid?.toString() || '0'),
+        balance: parseFloat(fee.total_billed?.toString() || fee.total_fee?.toString() || '0') - parseFloat(fee.total_paid?.toString() || fee.amount_paid?.toString() || '0')
+      })),
+      payments,
+      total_billed: totalBilled,
       total_paid: totalPaid,
-      semester_fee: currentSemesterFee,
-      session_progress: sessionProgress,
-      fees: fees || [],
-      payments: payments || []
+      fee_balance: feeBalance,
+      semester_fee: semesterFee,
+      session_progress: totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0
     }
 
-    return NextResponse.json({ success: true, data: feeData })
+    return NextResponse.json({ success: true, data: responseData })
   } catch (error) {
-    console.error('Error in fees API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

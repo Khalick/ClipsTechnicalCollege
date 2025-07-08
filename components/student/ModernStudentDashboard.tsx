@@ -50,7 +50,9 @@ interface UnitData {
 interface FeeData {
   fee_balance: number
   total_paid: number
+  total_billed: number
   semester_fee: number
+  current_semester_fee?: number
   session_progress: number
   fees: any
   payments: any
@@ -375,7 +377,7 @@ export function StudentDashboard() {
                   </div>
                   <div className="card-content">
                     <h3>TOTAL BILLED:</h3>
-                    <p className="amount">{formatCurrency(fees?.semester_fee || 0)}</p>
+                    <p className="amount">{formatCurrency(fees?.total_billed || 0)}</p>
                     <button className="card-btn">View Details ●</button>
                   </div>
                 </div>
