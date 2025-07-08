@@ -1,3 +1,4 @@
+'use client'
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Spinner } from "@/components/Spinner";
+import Spinner from "@/components/Spinner";
 import { 
   Dialog, 
   DialogContent, 
@@ -32,14 +33,14 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function FeeManagement() {
-  const [students, setStudents] = useState([]);
-  const [fees, setFees] = useState([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [fees, setFees] = useState<FeeRecord[]>([]);
   const [selectedSemester, setSelectedSemester] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [showBulkDialog, setShowBulkDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState(null);
+  const [currentStudent, setCurrentStudent] = useState<FeeRecord | null>(null);
   const { toast } = useToast();
 
   // Form states
@@ -103,13 +104,29 @@ export function FeeManagement() {
     fetchFees();
   }, [selectedSemester]);
 
-  const handleToggleSelectStudent = (studentId) => {
-    setSelectedStudents(prev => 
-      prev.includes(studentId)
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
-    );
-  };
+interface Student {
+    id: number;
+    name: string;
+    registration_number: string;
+}
+
+interface FeeRecord {
+    id: number;
+    student_id: number;
+    semester: string;
+    total_fee: number;
+    amount_paid?: number;
+    due_date?: string;
+    students: Student;
+}
+
+    const handleToggleSelectStudent = (studentId: number): void => {
+        setSelectedStudents((prev: number[]) => 
+            prev.includes(studentId)
+                ? prev.filter((id: number) => id !== studentId)
+                : [...prev, studentId]
+        );
+    };
 
   const handleSelectAll = () => {
     if (selectedStudents.length === fees.length) {
@@ -233,7 +250,7 @@ export function FeeManagement() {
     }
   };
 
-  const openPaymentDialog = (student) => {
+  const openPaymentDialog = (student: FeeRecord) => {
     setCurrentStudent(student);
     setShowPaymentDialog(true);
   };
@@ -285,7 +302,8 @@ export function FeeManagement() {
                     <input 
                       type="checkbox" 
                       onChange={handleSelectAll}
-                      checked={selectedStudents.length > 0 && selectedStudents.length === fees.length} 
+                      checked={selectedStudents.length > 0 && selectedStudents.length === fees.length}
+                      aria-label="Select all students"
                     />
                   </TableHead>
                   <TableHead>Student</TableHead>
@@ -311,6 +329,7 @@ export function FeeManagement() {
                           type="checkbox" 
                           checked={selectedStudents.includes(fee.student_id)}
                           onChange={() => handleToggleSelectStudent(fee.student_id)}
+                          aria-label={`Select ${fee.students.name}`}
                         />
                       </TableCell>
                       <TableCell>{fee.students.name}</TableCell>
@@ -345,8 +364,8 @@ export function FeeManagement() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Semester</Label>
-              <Select value={selectedSemester} onValueChange={setSelectedSemester} className="col-span-3">
-                <SelectTrigger>
+              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select Semester" />
                 </SelectTrigger>
                 <SelectContent>
@@ -417,8 +436,8 @@ export function FeeManagement() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod} className="col-span-3">
-                <SelectTrigger>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="col-span-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
