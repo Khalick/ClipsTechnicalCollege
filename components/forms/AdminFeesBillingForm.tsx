@@ -19,12 +19,14 @@ interface FeeRecord {
   // Support both old and new column names
   total_fee?: number
   total_billed?: number
+  semester_fee?: number
   amount_paid?: number
   total_paid?: number
   balance?: number
   fee_balance?: number
   due_date: string
   students: Student
+  actual_paid?: number
 }
 
 export function AdminFeesBillingForm() {
@@ -34,6 +36,7 @@ export function AdminFeesBillingForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingStudents, setIsLoadingStudents] = useState(false)
   const [isLoadingFees, setIsLoadingFees] = useState(false)
+  const [feesSummary, setFeesSummary] = useState({ totalBilled: 0, totalPaid: 0, totalBalance: 0 })
   const { showToast } = useToast()
 
   // Billing form states
@@ -95,7 +98,29 @@ export function AdminFeesBillingForm() {
           console.log('Sample fee data:', result.data[0])
         }
         
-        setFees(result.data)
+
+        
+        // Fetch payments to get actual paid amounts
+        const paymentsResult = await apiRequest('/api/admin/payments')
+        const payments = paymentsResult.success ? paymentsResult.data : []
+        
+        // Calculate summary totals with actual payments
+        const totalBilled = result.data.reduce((sum: number, fee: FeeRecord) => 
+          sum + (fee.semester_fee || fee.total_billed || fee.total_fee || 0), 0)
+        
+        const totalPaid = payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+        const totalBalance = totalBilled - totalPaid
+        
+        setFeesSummary({ totalBilled, totalPaid, totalBalance })
+        
+        // Add actual payments to fee records
+        const feesWithPayments = result.data.map((fee: FeeRecord) => {
+          const studentPayments = payments.filter((p: any) => p.student_id === fee.student_id)
+          const actualPaid = studentPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+          return { ...fee, actual_paid: actualPaid }
+        })
+        
+        setFees(feesWithPayments)
       } else {
         console.error('Error fetching fees:', result.error || 'Unknown error')
         showToast("Failed to fetch fee records", "error")
@@ -286,6 +311,28 @@ export function AdminFeesBillingForm() {
 
   return (
     <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="p-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-blue-600">Total Billed</h3>
+            <p className="text-2xl font-bold">{formatCurrency(feesSummary.totalBilled)}</p>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-green-600">Total Paid</h3>
+            <p className="text-2xl font-bold">{formatCurrency(feesSummary.totalPaid)}</p>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-red-600">Outstanding Balance</h3>
+            <p className="text-2xl font-bold">{formatCurrency(feesSummary.totalBalance)}</p>
+          </div>
+        </Card>
+      </div>
+      
       {/* Tab Navigation */}
       <div className="flex space-x-4 border-b border-gray-200">
         <button
@@ -748,10 +795,10 @@ export function AdminFeesBillingForm() {
                         Semester
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Fee
+                        Total Billed
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Paid
+                        Total Paid
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Balance
@@ -781,23 +828,23 @@ export function AdminFeesBillingForm() {
                           {fee.semester}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(fee.total_fee ?? fee.total_billed ?? 0)}
+                          {formatCurrency(fee.total_fee || fee.total_billed || 0)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(fee.amount_paid ?? fee.total_paid ?? 0)}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                          {formatCurrency(fee.actual_paid || fee.total_paid || fee.amount_paid || 0)}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getStatusColor(fee.balance ?? fee.fee_balance ?? 0)}`}>
-                          {formatCurrency(fee.balance ?? fee.fee_balance ?? 0)}
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getStatusColor(fee.fee_balance || fee.balance || ((fee.semester_fee || fee.total_fee || fee.total_billed || 0) - (fee.total_paid || fee.amount_paid || 0)))}`}>
+                          {formatCurrency(fee.fee_balance || fee.balance || ((fee.total_fee || fee.total_billed || 0) - (fee.total_paid || fee.amount_paid || 0)))}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            fee.balance <= 0 
+                            (fee.balance ?? 0) <= 0 
                               ? 'bg-green-100 text-green-800' 
-                              : fee.balance <= 10000 
+                              : (fee.balance ?? 0) <= 10000 
                                 ? 'bg-yellow-100 text-yellow-800' 
                                 : 'bg-red-100 text-red-800'
                           }`}>
-                            {getStatusText(fee.balance)}
+                            {getStatusText(fee.fee_balance || fee.balance || ((fee.total_fee || fee.total_billed || 0) - (fee.total_paid || fee.amount_paid || 0)))}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

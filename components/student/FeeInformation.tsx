@@ -72,7 +72,7 @@ export function FeeInformation({ fees, onRefresh }: FeeInformationProps) {
   }
 
   const getPaymentProgress = () => {
-    const totalBilled = feeData.total_billed
+    const totalBilled = feeData.semester_fee || feeData.total_billed || 0
     if (totalBilled <= 0) return 0
     return Math.round((feeData.total_paid / totalBilled) * 100)
   }
@@ -116,7 +116,7 @@ export function FeeInformation({ fees, onRefresh }: FeeInformationProps) {
           {/* Total Billed */}
           <div className="fee-item">
             <span className="fee-label">🏷️ TOTAL BILLED:</span>
-            <span className="fee-value">KSh. {feeData.total_billed.toLocaleString()}.00</span>
+            <span className="fee-value">KSh. {(feeData.semester_fee || feeData.total_billed || 0).toLocaleString()}.00</span>
           </div>
 
           {/* Total Paid */}

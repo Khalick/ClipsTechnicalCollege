@@ -1,9 +1,11 @@
-// /app/api/students/fees/[regNumber]/route.ts
+// /app/api/students/fees/[...regNumber]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-client'
-export async function GET(request: NextRequest, { params }: { params: Promise<{ regNumber: string }> | { regNumber: string } }) {
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ regNumber: string[] }> | { regNumber: string[] } }) {
   try {
-    const { regNumber } = 'then' in params ? await params : params
+    const { regNumber: regNumberArray } = 'then' in params ? await params : params
+    const regNumber = regNumberArray.join('/')
 
     // Get student ID from registration number
     const { data: student, error: studentError } = await supabaseAdmin

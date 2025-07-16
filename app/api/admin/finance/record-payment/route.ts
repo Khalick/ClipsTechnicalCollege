@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('fees')
         .update({ 
-          amount_paid: totalPaid,
+          total_paid: totalPaid,
           updated_at: new Date().toISOString()
         })
         .eq('id', fees[0].id)
